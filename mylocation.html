@@ -1,0 +1,71 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Route Finder</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; text-align: center; padding-top: 50px; background: #f4f4f9; }
+        .box { background: white; padding: 40px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 1px solid #ddd; }
+        h2 { color: #333; }
+        input { width: 280px; padding: 12px; margin: 10px; border-radius: 6px; border: 1px solid #ccc; font-size: 16px; }
+        button { background: #007bff; color: white; padding: 15px 30px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 10px; }
+        button:hover { background: #0056b3; }
+        #st { margin-top: 20px; font-weight: bold; color: #555; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>Route Optimizer</h2>
+        <input type="text" id="start" placeholder="Start Point (or 'My Location')">
+        <br>
+        <input type="text" id="end" placeholder="Destination (e.g. Clock Tower)">
+        <br><br>
+        <button onclick="run()">FIND BEST PATH</button>
+        <p id="st">Ready</p>
+    </div>
+
+    <script>
+        function run() {
+            const s = document.getElementById('start').value;
+            const e = document.getElementById('end').value;
+            const statusBox = document.getElementById('st');
+
+            if (!s || !e) {
+                alert("Please fill both locations");
+                return;
+            }
+
+            statusBox.innerHTML = "Processing (AI logic active)...";
+
+            if (s.toLowerCase() === "my location") {
+                navigator.geolocation.getCurrentPosition(p => {
+                    send(p.coords.latitude, p.coords.longitude, s, e);
+                }, (err) => {
+                    statusBox.innerHTML = "❌ GPS Error: Please allow location access.";
+                });
+            } else {
+                send(null, null, s, e);
+            }
+        }
+
+        function send(lat, lon, start, end) {
+            fetch('/generate_ai_route', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({lat: lat, lon: lon, start: start, end: end})
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === "Success") {
+                    // This now shows the specific message from the Python Fail-Safe
+                    document.getElementById('st').innerHTML = "✅ " + data.msg;
+                } else {
+                    document.getElementById('st').innerHTML = "❌ " + data.msg;
+                }
+            })
+            .catch(error => {
+                document.getElementById('st').innerHTML = "❌ Server Connection Failed.";
+            });
+        }
+    </script>
+</body>
+</html>
